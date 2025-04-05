@@ -305,8 +305,8 @@ class BombEffect(pygame.sprite.Sprite):
 class Missile(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super(Missile, self).__init__()
-        self.original_image = self.create_missile_image()
-        self.image = self.original_image
+        self._base_image = self.create_missile_image()  # Use a different name to avoid conflict
+        self.image = self._base_image
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.bottom = y
@@ -382,7 +382,7 @@ class Missile(pygame.sprite.Sprite):
 
             # Rotate missile to face direction of travel
             angle = math.degrees(math.atan2(-self.speedy, self.speedx)) - 90
-            self.image = pygame.transform.rotate(self.original_image, angle)
+            self.image = pygame.transform.rotate(self._base_image, angle)
             self.rect = self.image.get_rect(center=self.rect.center)
 
         # Move the missile
@@ -394,22 +394,7 @@ class Missile(pygame.sprite.Sprite):
             self.rect.left > SCREEN_WIDTH or self.rect.top > SCREEN_HEIGHT):
             self.kill()
 
-    @property
-    def original_image(self):
-        # Create the original image for rotation
-        img = pygame.Surface((10, 20))
-        img.fill(BLACK)
-
-        # Draw missile body
-        pygame.draw.rect(img, GREEN, (0, 0, 10, 20))
-        pygame.draw.polygon(img, ORANGE, [(0, 15), (5, 20), (10, 15)])
-        pygame.draw.rect(img, LIGHT_GREY, (3, 5, 4, 4))
-
-        # Add engine flame
-        pygame.draw.polygon(img, YELLOW, [(3, 0), (5, -5), (7, 0)])
-
-        img.set_colorkey(BLACK)
-        return img
+    # Removed the property that was causing infinite recursion
 
 # Smoke particle for missile trail
 class SmokeParticle(pygame.sprite.Sprite):

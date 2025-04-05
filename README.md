@@ -60,6 +60,11 @@ deactivate
 - Auto-tracking missiles that follow enemies
   - Missiles fire automatically when shooting (20% chance)
   - Can still be fired manually with the M key
+  - Missile upgrade system with 4 levels:
+    - Level 1: Single missile with basic damage
+    - Level 2: Dual missiles with increased damage
+    - Level 3: Triple missiles with high damage
+    - Level 4: Quad missiles with maximum damage
 - Three types of power-ups: weapon upgrades, bombs, and missiles
 - Dynamic power-up drops based on enemy level:
   - Higher level enemies drop more valuable power-ups

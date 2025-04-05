@@ -46,6 +46,12 @@ WEAPON_LEVEL_3 = 3  # Spread shot
 WEAPON_LEVEL_4 = 4  # Rapid fire with quad lasers
 WEAPON_LEVEL_5 = 5  # Ultimate weapon
 
+# Missile levels
+MISSILE_LEVEL_1 = 1  # Basic single missile
+MISSILE_LEVEL_2 = 2  # Dual missiles
+MISSILE_LEVEL_3 = 3  # Triple missiles with increased damage
+MISSILE_LEVEL_4 = 4  # Quad missiles with max damage
+
 # Create the screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Retro Bee Shooter")
@@ -182,8 +188,9 @@ class PowerUp(pygame.sprite.Sprite):
 
         # Randomly choose type if not specified
         if powerup_type is None:
-            # 60% chance for weapon upgrade, 20% chance for bomb, 20% chance for missile
-            self.type = random.choice(["weapon_upgrade"] * 6 + ["bomb"] * 2 + ["missile"] * 2)
+            # 50% weapon upgrade, 15% bomb, 15% missile, 20% missile upgrade
+            self.type = random.choice(["weapon_upgrade"] * 5 + ["bomb"] * 15 +
+                                    ["missile"] * 15 + ["missile_upgrade"] * 2)
         else:
             self.type = powerup_type
 
@@ -227,6 +234,26 @@ class PowerUp(pygame.sprite.Sprite):
             # Add a glow effect
             for i in range(4):
                 pygame.draw.circle(self.image, GREEN, (10, 10), 10 + i, 1)
+
+        elif self.type == "missile_upgrade":
+            # Draw a missile upgrade power-up (red with multiple targeting symbols)
+            pygame.draw.circle(self.image, RED, (10, 10), 8)
+            pygame.draw.circle(self.image, LIGHT_GREY, (10, 10), 6)
+
+            # Add multiple targeting symbols to indicate upgrade
+            pygame.draw.circle(self.image, RED, (10, 10), 4, 1)
+            pygame.draw.line(self.image, RED, (6, 10), (14, 10), 1)
+            pygame.draw.line(self.image, RED, (10, 6), (10, 14), 1)
+
+            # Add small dots to indicate multiple missiles
+            pygame.draw.circle(self.image, WHITE, (7, 7), 1)
+            pygame.draw.circle(self.image, WHITE, (13, 7), 1)
+            pygame.draw.circle(self.image, WHITE, (7, 13), 1)
+            pygame.draw.circle(self.image, WHITE, (13, 13), 1)
+
+            # Add a glow effect
+            for i in range(4):
+                pygame.draw.circle(self.image, RED, (10, 10), 10 + i, 1)
 
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
@@ -303,34 +330,75 @@ class BombEffect(pygame.sprite.Sprite):
 
 # Missile class for auto-tracking projectiles
 class Missile(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, level=MISSILE_LEVEL_1, offset=0):
         super(Missile, self).__init__()
+        self.level = level
         self._base_image = self.create_missile_image()  # Use a different name to avoid conflict
         self.image = self._base_image
         self.rect = self.image.get_rect()
-        self.rect.centerx = x
+        self.rect.centerx = x + offset  # Allow for horizontal offset for multiple missiles
         self.rect.bottom = y
-        self.speedy = -3  # Slower than bullets for tracking
+
+        # Set properties based on missile level
+        if level == MISSILE_LEVEL_1:
+            self.speedy = -3.0  # Basic speed
+            self.max_speed = 5.0
+            self.acceleration = 0.2
+            self.damage = 3     # Basic damage
+            self.smoke_delay = 5 # Normal smoke trail
+        elif level == MISSILE_LEVEL_2:
+            self.speedy = -3.5  # Slightly faster
+            self.max_speed = 5.5
+            self.acceleration = 0.25
+            self.damage = 4     # More damage
+            self.smoke_delay = 4 # More frequent smoke
+        elif level == MISSILE_LEVEL_3:
+            self.speedy = -4.0  # Even faster
+            self.max_speed = 6.0
+            self.acceleration = 0.3
+            self.damage = 5     # High damage
+            self.smoke_delay = 3 # Dense smoke trail
+        elif level == MISSILE_LEVEL_4:
+            self.speedy = -4.5  # Fastest
+            self.max_speed = 7.0
+            self.acceleration = 0.35
+            self.damage = 7     # Maximum damage
+            self.smoke_delay = 2 # Very dense smoke trail
+
         self.speedx = 0
-        self.max_speed = 5
-        self.acceleration = 0.2
-        self.damage = 3  # High damage - can take out most enemies in one hit
         self.target = None
         self.smoke_timer = 0
-        self.smoke_delay = 5  # Frames between smoke particles
 
     def create_missile_image(self):
         # Create a surface for the missile
         surf = pygame.Surface((10, 20))
         surf.fill(BLACK)
 
+        # Base missile body color depends on level
+        if self.level == MISSILE_LEVEL_1:
+            body_color = GREEN
+            fin_color = ORANGE
+        elif self.level == MISSILE_LEVEL_2:
+            body_color = CYAN
+            fin_color = BLUE
+        elif self.level == MISSILE_LEVEL_3:
+            body_color = PURPLE
+            fin_color = PINK
+        else:  # MISSILE_LEVEL_4
+            body_color = RED
+            fin_color = YELLOW
+
         # Draw missile body
-        pygame.draw.rect(surf, GREEN, (0, 0, 10, 20))
-        pygame.draw.polygon(surf, ORANGE, [(0, 15), (5, 20), (10, 15)])
+        pygame.draw.rect(surf, body_color, (0, 0, 10, 20))
+        pygame.draw.polygon(surf, fin_color, [(0, 15), (5, 20), (10, 15)])
         pygame.draw.rect(surf, LIGHT_GREY, (3, 5, 4, 4))
 
         # Add engine flame
         pygame.draw.polygon(surf, YELLOW, [(3, 0), (5, -5), (7, 0)])
+
+        # Add level indicator dots
+        for i in range(self.level):
+            pygame.draw.circle(surf, WHITE, (5, 15 - i * 3), 1)
 
         surf.set_colorkey(BLACK)
         return surf
@@ -433,6 +501,7 @@ class Player(pygame.sprite.Sprite):
         self.bomb_delay = 2000  # Cooldown between bomb uses (milliseconds)
         self.last_bomb = 0
         self.missiles = 3  # Start with 3 missiles
+        self.missile_level = MISSILE_LEVEL_1  # Start with basic missiles
         self.missile_delay = 1000  # Cooldown between missile launches (milliseconds)
         self.last_missile = 0
 
@@ -581,16 +650,60 @@ class Player(pygame.sprite.Sprite):
         self.missiles += 2  # Add 2 missiles at a time
         sounds['powerup'].play()
 
+    def upgrade_missile(self):
+        if self.missile_level < MISSILE_LEVEL_4:
+            self.missile_level += 1
+            # Add bonus missiles when upgrading
+            self.missiles += 3
+            # Play power-up sound
+            sounds['powerup'].play()
+            return True
+        else:
+            # If already at max level, just add more missiles
+            self.missiles += 5
+            sounds['powerup'].play()
+            return False
+
     def launch_missile(self, auto_launch=False):
         now = pygame.time.get_ticks()
         if self.missiles > 0 and now - self.last_missile > self.missile_delay:
-            self.missiles -= 1
+            # Determine how many missiles to launch based on missile level
+            if self.missile_level == MISSILE_LEVEL_1:
+                # Single missile
+                missiles_to_launch = 1
+                self.missiles -= 1
+            elif self.missile_level == MISSILE_LEVEL_2:
+                # Dual missiles
+                missiles_to_launch = 2
+                self.missiles -= 1  # Still only consume 1 missile for multiple launches
+            elif self.missile_level == MISSILE_LEVEL_3:
+                # Triple missiles
+                missiles_to_launch = 3
+                self.missiles -= 1
+            else:  # MISSILE_LEVEL_4
+                # Quad missiles
+                missiles_to_launch = 4
+                self.missiles -= 1
+
             self.last_missile = now
 
-            # Create missile
-            missile = Missile(self.rect.centerx, self.rect.top)
-            all_sprites.add(missile)
-            missiles_group.add(missile)
+            # Calculate offsets for multiple missiles
+            if missiles_to_launch == 1:
+                offsets = [0]  # Center
+            elif missiles_to_launch == 2:
+                offsets = [-15, 15]  # Left and right
+            elif missiles_to_launch == 3:
+                offsets = [-20, 0, 20]  # Left, center, right
+            else:  # 4 missiles
+                offsets = [-30, -10, 10, 30]  # Far left, left, right, far right
+
+            # Create missiles with appropriate offsets
+            launched_missiles = []
+            for offset in offsets:
+                missile = Missile(self.rect.centerx, self.rect.top, self.missile_level, offset)
+                all_sprites.add(missile)
+                missiles_group.add(missile)
+                launched_missiles.append(missile)
 
             # Play missile sound (at lower volume if auto-launched)
             if auto_launch:
@@ -604,7 +717,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 sounds['missile'].play()
 
-            return missile
+            return launched_missiles
         return None
 
 # Bee class (enemy)
@@ -1168,6 +1281,8 @@ def game():
                     player.add_bomb()
                 elif hit.type == "missile":
                     player.add_missile()
+                elif hit.type == "missile_upgrade":
+                    player.upgrade_missile()
 
             # Check for bee-player collisions
             hits = pygame.sprite.spritecollide(player, bees, False)
@@ -1192,9 +1307,24 @@ def game():
         bomb_text = font.render(f"Bombs: {player.bombs}", True, WHITE)
         screen.blit(bomb_text, (SCREEN_WIDTH - bomb_text.get_width() - 10, 50))
 
-        # Draw missile count
-        missile_text = font.render(f"Missiles: {player.missiles}", True, WHITE)
+        # Draw missile count and level
+        missile_text = font.render(f"Missiles: {player.missiles} (Lvl {player.missile_level})", True, WHITE)
         screen.blit(missile_text, (SCREEN_WIDTH - missile_text.get_width() - 10, 90))
+
+        # Draw missile level indicator with color based on level
+        if player.missile_level == MISSILE_LEVEL_1:
+            missile_level_color = GREEN
+        elif player.missile_level == MISSILE_LEVEL_2:
+            missile_level_color = CYAN
+        elif player.missile_level == MISSILE_LEVEL_3:
+            missile_level_color = PURPLE
+        else:  # MISSILE_LEVEL_4
+            missile_level_color = RED
+
+        # Draw missile level indicator dots
+        for i in range(player.missile_level):
+            pygame.draw.circle(screen, missile_level_color,
+                             (SCREEN_WIDTH - 20 - (i * 10), 110), 3)
 
         # Draw game over screen
         if game_over:

@@ -58,6 +58,8 @@ deactivate
 - Weapon upgrade system with 5 different weapon levels
 - Bomb weapon that clears all enemies from the screen
 - Auto-tracking missiles that follow enemies
+  - Missiles fire automatically when shooting (20% chance)
+  - Can still be fired manually with the M key
 - Three types of power-ups: weapon upgrades, bombs, and missiles
 - Dynamic power-up drops based on enemy level:
   - Higher level enemies drop more valuable power-ups

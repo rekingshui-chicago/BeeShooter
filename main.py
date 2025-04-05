@@ -471,6 +471,11 @@ class Player(pygame.sprite.Sprite):
         if now - self.last_shot > self.shoot_delay:
             self.last_shot = now
 
+            # Try to launch a missile automatically if available
+            # Use a 20% chance to launch a missile when shooting (to conserve missiles)
+            if self.missiles > 0 and random.random() < 0.20:
+                self.launch_missile(auto_launch=True)
+
             # Different shooting patterns based on weapon level
             if self.weapon_level == WEAPON_LEVEL_1:
                 # Basic dual lasers
@@ -576,17 +581,29 @@ class Player(pygame.sprite.Sprite):
         self.missiles += 2  # Add 2 missiles at a time
         sounds['powerup'].play()
 
-    def launch_missile(self):
+    def launch_missile(self, auto_launch=False):
         now = pygame.time.get_ticks()
         if self.missiles > 0 and now - self.last_missile > self.missile_delay:
             self.missiles -= 1
             self.last_missile = now
+
             # Create missile
             missile = Missile(self.rect.centerx, self.rect.top)
             all_sprites.add(missile)
             missiles_group.add(missile)
-            # Play missile sound
-            sounds['missile'].play()
+
+            # Play missile sound (at lower volume if auto-launched)
+            if auto_launch:
+                # Store original volume
+                original_volume = sounds['missile'].get_volume()
+                # Set to lower volume for auto-launch
+                sounds['missile'].set_volume(original_volume * 0.6)
+                sounds['missile'].play()
+                # Restore original volume
+                sounds['missile'].set_volume(original_volume)
+            else:
+                sounds['missile'].play()
+
             return missile
         return None
 
@@ -1031,8 +1048,8 @@ def game():
                             all_sprites.add(new_bee)
                             bees.add(new_bee)
                 if event.key == K_m:
-                    # Launch missile if available
-                    player.launch_missile()
+                    # Launch missile if available (manual launch)
+                    player.launch_missile(auto_launch=False)
                 if game_over and event.key == K_RETURN:
                     return True  # Restart the game
 

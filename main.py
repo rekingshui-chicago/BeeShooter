@@ -501,14 +501,24 @@ class Player(pygame.sprite.Sprite):
                     bullets.add(bullet)
 
             elif self.weapon_level == WEAPON_LEVEL_4:
-                # Rapid fire (reduced delay)
+                # Rapid fire with quad lasers (reduced delay and more bullets)
                 self.shoot_delay = 150  # Faster firing rate
-                bullet1 = Bullet(self.rect.left + 15, self.rect.top + 10, 0)
-                bullet2 = Bullet(self.rect.right - 15, self.rect.top + 10, 0)
+
+                # Create 4 bullets with increased damage
+                bullet1 = Bullet(self.rect.left + 10, self.rect.top + 10, 0, damage_boost=True)
+                bullet2 = Bullet(self.rect.left + 25, self.rect.top + 5, 0, damage_boost=True)
+                bullet3 = Bullet(self.rect.right - 25, self.rect.top + 5, 0, damage_boost=True)
+                bullet4 = Bullet(self.rect.right - 10, self.rect.top + 10, 0, damage_boost=True)
+
+                # Add bullets to sprite groups
                 all_sprites.add(bullet1)
                 all_sprites.add(bullet2)
+                all_sprites.add(bullet3)
+                all_sprites.add(bullet4)
                 bullets.add(bullet1)
                 bullets.add(bullet2)
+                bullets.add(bullet3)
+                bullets.add(bullet4)
 
             elif self.weapon_level == WEAPON_LEVEL_5:
                 # Ultimate weapon (combination of spread and rapid fire)
@@ -530,9 +540,13 @@ class Player(pygame.sprite.Sprite):
     def upgrade_weapon(self):
         if self.weapon_level < WEAPON_LEVEL_5:
             self.weapon_level += 1
-            # Reset shoot delay if we're not at rapid fire levels yet
+
+            # Set appropriate shoot delay based on weapon level
             if self.weapon_level < WEAPON_LEVEL_4:
-                self.shoot_delay = 250
+                self.shoot_delay = 250  # Normal fire rate for levels 1-3
+            else:
+                self.shoot_delay = 150  # Faster fire rate for levels 4-5
+
             # Play power-up sound
             sounds['powerup'].play()
             return True
@@ -860,16 +874,28 @@ class Explosion(pygame.sprite.Sprite):
 
 # Bullet class
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, angle=0, powered=False):
+    def __init__(self, x, y, angle=0, powered=False, damage_boost=False):
         super(Bullet, self).__init__()
 
         if powered:
-            # Create a larger, more powerful bullet
+            # Create a larger, more powerful bullet (level 5 center beam)
             self.image = pygame.Surface((10, 20))
             self.image.fill(BLACK)
             pygame.draw.rect(self.image, PURPLE, (0, 0, 10, 20))
             pygame.draw.rect(self.image, WHITE, (4, 0, 2, 20))
             self.damage = 3
+        elif damage_boost:
+            # Enhanced bullet for weapon level 4 (same size but more damage)
+            self.image = pygame.Surface((5, 15))
+            self.image.fill(BLACK)
+
+            # Red-orange color for level 4 bullets
+            color = ORANGE
+
+            pygame.draw.rect(self.image, color, (0, 0, 5, 15))
+            pygame.draw.rect(self.image, WHITE, (2, 0, 1, 15))
+            # Add a glow effect
+            self.damage = 2  # Double damage compared to regular bullets
         else:
             # Regular bullet with color based on angle
             self.image = pygame.Surface((5, 15))

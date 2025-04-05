@@ -43,7 +43,7 @@ ENEMY_LEVEL_4 = 4  # Queen bee - very high health, special attack patterns
 WEAPON_LEVEL_1 = 1  # Basic dual lasers
 WEAPON_LEVEL_2 = 2  # Triple lasers
 WEAPON_LEVEL_3 = 3  # Spread shot
-WEAPON_LEVEL_4 = 4  # Rapid fire
+WEAPON_LEVEL_4 = 4  # Rapid fire with quad lasers
 WEAPON_LEVEL_5 = 5  # Ultimate weapon
 
 # Create the screen
@@ -504,11 +504,14 @@ class Player(pygame.sprite.Sprite):
                 # Rapid fire with quad lasers (reduced delay and more bullets)
                 self.shoot_delay = 150  # Faster firing rate
 
-                # Create 4 bullets with increased damage
-                bullet1 = Bullet(self.rect.left + 10, self.rect.top + 10, 0, damage_boost=True)
-                bullet2 = Bullet(self.rect.left + 25, self.rect.top + 5, 0, damage_boost=True)
-                bullet3 = Bullet(self.rect.right - 25, self.rect.top + 5, 0, damage_boost=True)
-                bullet4 = Bullet(self.rect.right - 10, self.rect.top + 10, 0, damage_boost=True)
+                # Create 4 bullets with increased damage and spread pattern
+                # Left side bullets with outward angles
+                bullet1 = Bullet(self.rect.left + 10, self.rect.top + 10, -1, damage_boost=True)  # Angled left
+                bullet2 = Bullet(self.rect.left + 25, self.rect.top + 5, 0, damage_boost=True)    # Straight
+
+                # Right side bullets with outward angles
+                bullet3 = Bullet(self.rect.right - 25, self.rect.top + 5, 0, damage_boost=True)   # Straight
+                bullet4 = Bullet(self.rect.right - 10, self.rect.top + 10, 1, damage_boost=True)  # Angled right
 
                 # Add bullets to sprite groups
                 all_sprites.add(bullet1)

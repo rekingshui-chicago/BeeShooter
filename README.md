@@ -1,82 +1,128 @@
-# Retro Bee Shooter Game
+# Bee Shooter Game
 
-A simple retro-style game where you control a spaceship and shoot bees.
+A retro-style arcade shooter game where you control an F14 fighter jet to shoot down enemy bees.
 
-## How to Play
+## Table of Contents
+- [Features](#features)
+- [Controls](#controls)
+- [Installation](#installation)
+  - [Windows](#windows)
+  - [Linux/Ubuntu](#linuxubuntu)
+- [Game Mechanics](#game-mechanics)
+  - [Weapons](#weapons)
+  - [Upgrades](#upgrades)
+  - [Enemies](#enemies)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Credits](#credits)
 
-1. Use the arrow keys (UP, DOWN, LEFT, RIGHT) to move your spaceship in all directions
-2. Press SPACEBAR to shoot
-3. Press B to use a bomb (clears all enemies from the screen)
-4. Press M to launch a missile (auto-tracks and follows enemies)
-5. Collect power-ups to upgrade your weapons, bombs, and missiles
-6. Avoid getting hit by the bees
-7. Score points by shooting bees - higher level bees are worth more points!
+## Features
+
+- Fast-paced arcade shooter gameplay
+- Multiple weapon systems: bullets, missiles, and bombs
+- Weapon and missile upgrades
+- Enemy progression with different bee types
+- Boss battles at specific score thresholds
+- Dynamic background with parallax scrolling
+- Realistic sound effects and background music
+- F14 fighter jet with detailed graphics
 
 ## Controls
 
-- UP/DOWN/LEFT/RIGHT arrows: Move spaceship in all directions
-- SPACEBAR: Shoot
-- B: Use bomb weapon (if available)
-- M: Launch tracking missile (if available)
-- ESC: Quit game
-- ENTER: Start game / Restart after game over
+- **Arrow Keys**: Move the fighter
+- **Space**: Shoot bullets
+- **M**: Launch missiles
+- **B**: Use bomb (clears all enemies)
+- **ESC**: Quit game
+- **Enter**: Restart after game over
 
-## Requirements
+## Installation
 
-- Python 3.x
+### Requirements
+
+- Python 3.6 or higher
 - Pygame
 
-## Running the Game
+### Windows
 
-### Using the run script (recommended)
+1. Make sure you have Python 3.6 or higher installed
+2. Clone or download this repository
+3. Double-click on `BeeShooter.bat` to start the game
 
-```bash
-./run_game.sh
+### Linux/Ubuntu
+
+1. Make sure you have Python 3.6 or higher installed
+2. Clone or download this repository
+3. Make the launcher executable:
+   ```
+   chmod +x BeeShooter.sh
+   ```
+4. Run the launcher:
+   ```
+   ./BeeShooter.sh
+   ```
+
+## Game Mechanics
+
+### Weapons
+
+- **Bullets**: Basic weapon, unlimited ammo
+- **Missiles**: Homing projectiles that track enemies, limited supply
+- **Bombs**: Clear all enemies on screen, very limited supply
+
+### Upgrades
+
+- **Weapon Upgrades**: Increase bullet spread and damage
+- **Missile Upgrades**: Increase missile count and damage
+- **Pickup Items**: Collect items dropped by enemies for extra missiles, bombs, and upgrades
+
+### Enemies
+
+- **Basic Bee**: Standard enemy with low health
+- **Soldier Bee**: Tougher enemy with more health
+- **Elite Bee**: Fast-moving enemy with high health
+- **Queen Bee**: Boss enemy with very high health, appears at specific score thresholds
+
+## Troubleshooting
+
+If you encounter any issues:
+
+1. Make sure Python 3.6+ is installed and in your PATH
+2. Check that Pygame is installed (`pip install pygame`)
+3. Look at the `game_debug.log` file for error details
+4. If the game crashes on startup, try running it from the command line:
+   ```
+   python main_new.py
+   ```
+
+### Command-Line Options
+
+You can pass additional options to the launcher:
+
+- `--debug`: Enable debug mode
+- `--no-sound`: Disable sound
+- `--platform [windows|linux]`: Specify platform
+
+Example:
+```
+BeeShooter.bat --no-sound
 ```
 
-### Manual method
+## Development
 
-```bash
-# Activate the virtual environment
-source venv/bin/activate
+This game is built with Python and Pygame. The main components are:
 
-# Run the game
-python main.py
+- `main_new.py`: Entry point for the game
+- `src/game/game_manager.py`: Main game loop and state management
+- `src/entities/`: Game entities (player, enemies, projectiles)
+- `src/utils/`: Utility functions and resource management
 
-# Deactivate when done
-deactivate
-```
+## Credits
 
-## Game Features
+- Game Design & Programming: Reking Shui
+- Graphics: Procedurally generated with Pygame
+- Sound Effects: Generated with Python wave module
 
-- Full directional movement - control your fighter in all directions
-- Four different enemy types with varying difficulty:
-  - Level 1: Basic Bee - Low health, slow movement
-  - Level 2: Soldier Bee - Medium health, faster movement
-  - Level 3: Elite Bee - High health, special movement patterns
-  - Level 4: Queen Bee - Very high health, special abilities
-- Weapon upgrade system with 5 different weapon levels
-- Bomb weapon that clears all enemies from the screen
-- Auto-tracking missiles that follow enemies
-  - Missiles fire automatically when shooting (20% chance)
-  - Can still be fired manually with the M key
-  - Missile upgrade system with 4 levels:
-    - Level 1: Single missile with basic damage
-    - Level 2: Dual missiles with increased damage
-    - Level 3: Triple missiles with high damage
-    - Level 4: Quad missiles with maximum damage
-- Three types of power-ups: weapon upgrades, bombs, and missiles
-- Dynamic power-up drops based on enemy level:
-  - Higher level enemies drop more valuable power-ups
-  - Different enemies have different drop rates and preferences
-  - Different weapons have different chances of generating power-ups
-- Advanced enemy movement patterns for higher-level enemies
-- Detailed graphics with animations and particle effects
-- Sound effects for all game actions
-
-- Simple retro-style graphics
-- Increasing difficulty as you play
-- Score tracking
-- Game over screen with restart option
+---
 
 Enjoy the game!

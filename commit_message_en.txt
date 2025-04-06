@@ -1,0 +1,27 @@
+Restructure Project and Optimize Code
+
+This commit includes the following major changes:
+
+1. Project Structure Restructuring
+   - Created a standard src directory structure, including entities, effects, game, ui, and utils modules
+   - Removed redundant startup scripts, unified to use BeeShooter.bat and BeeShooter.sh
+   - Renamed main_new.py to main.py for more standard file naming
+
+2. Game Functionality Enhancements
+   - Added F14 fighter jet image to replace the original aircraft
+   - Implemented bee wing flapping animation effects
+   - Optimized background display, resolving the fragmented appearance of background images
+   - Fixed missile auto-tracking functionality
+   - Added background music and optimized sound effects
+
+3. User Experience Improvements
+   - Reduced the font size of status displays in the game interface
+   - Simplified startup scripts, providing better error handling
+   - Updated README documentation to be more concise and consistent
+
+4. Cleanup Work
+   - Deleted unnecessary documentation files and scripts
+   - Removed redundant sound effect creation scripts
+   - Deleted excess image files and creation scripts
+
+These changes make the project structure clearer, the code more modular, while enhancing the game's visual effects and user experience.

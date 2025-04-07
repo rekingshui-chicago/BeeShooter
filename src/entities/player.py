@@ -9,7 +9,7 @@ from src.utils.constants import (
     WEAPON_LEVEL_1, WEAPON_LEVEL_2, WEAPON_LEVEL_3, WEAPON_LEVEL_4, WEAPON_LEVEL_5,
     MISSILE_LEVEL_1, MISSILE_LEVEL_2, MISSILE_LEVEL_3, MISSILE_LEVEL_4
 )
-from src.utils.resources import load_image, sounds
+from src.utils.resources import load_image, sounds, play_sound
 from src.entities.bullet import Bullet
 from src.entities.missile import Missile
 
@@ -145,7 +145,7 @@ class Player(pygame.sprite.Sprite):
                 bullets.append(Bullet(self.rect.right - 5, self.rect.top, 2))
 
             # Play shooting sound
-            sounds['shoot'].play()
+            play_sound('shoot', channel='shoot')
 
             return bullets
 
@@ -163,14 +163,14 @@ class Player(pygame.sprite.Sprite):
                 self.shoot_delay = 150  # Faster fire rate for levels 4-5
 
             # Play power-up sound
-            sounds['powerup'].play()
+            play_sound('powerup', channel='powerup')
             return True
         return False
 
     def add_bomb(self):
         """Add a bomb to the player's inventory"""
         self.bombs += 1
-        sounds['powerup'].play()
+        play_sound('powerup', channel='powerup')
 
     def bomb(self):
         """Use a bomb if available and not on cooldown"""
@@ -192,7 +192,7 @@ class Player(pygame.sprite.Sprite):
         self.last_bomb = now
 
         # Play bomb sound
-        sounds['bomb'].play()
+        play_sound('bomb', channel='bomb')
 
         # Force event processing to ensure keyboard input isn't blocked
         pygame.event.pump()
@@ -202,7 +202,7 @@ class Player(pygame.sprite.Sprite):
     def add_missile(self):
         """Add missiles to the player's inventory"""
         self.missiles += 2  # Add 2 missiles at a time
-        sounds['powerup'].play()
+        play_sound('powerup', channel='powerup')
 
     def upgrade_missile(self):
         """Upgrade the player's missiles"""
@@ -211,12 +211,12 @@ class Player(pygame.sprite.Sprite):
             # Add bonus missiles when upgrading
             self.missiles += 3
             # Play power-up sound
-            sounds['powerup'].play()
+            play_sound('powerup', channel='powerup')
             return True
         else:
             # If already at max level, just add more missiles
             self.missiles += 5
-            sounds['powerup'].play()
+            play_sound('powerup', channel='powerup')
             return False
 
     def launch_missile(self, auto_launch=False):
@@ -256,15 +256,10 @@ class Player(pygame.sprite.Sprite):
 
             # Play missile sound (at lower volume if auto-launched)
             if auto_launch:
-                # Store original volume
-                original_volume = sounds['missile'].get_volume()
-                # Set to lower volume for auto-launch
-                sounds['missile'].set_volume(original_volume * 0.6)
-                sounds['missile'].play()
-                # Restore original volume
-                sounds['missile'].set_volume(original_volume)
+                # Use lower volume for auto-launch
+                play_sound('missile', channel='missile', volume=0.3)
             else:
-                sounds['missile'].play()
+                play_sound('missile', channel='missile')
 
             return launched_missiles
         return None

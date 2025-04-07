@@ -297,18 +297,67 @@ def load_image(name, colorkey=None):
 
     return surf
 
+# Sound channel management
+sound_channels = {}
+
+# Sound pool for frequently used sounds
+sound_pools = {}
+
+# Global volume control
+master_volume = 1.0
+music_volume = 0.3
+effects_volume = 0.7
+
 def setup_sound_system(args):
     """Initialize the sound system based on platform and arguments"""
-    global sounds
+    global sounds, sound_channels, sound_pools, master_volume, music_volume, effects_volume
 
     # Determine if sound should be enabled
     sound_enabled = not args.no_sound
 
     if sound_enabled:
         try:
-            # Initialize mixer with high quality settings
-            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=1024)
-            logger.info("Sound system initialized with high quality settings")
+            # Initialize mixer with optimized settings
+            # Higher frequency for better quality, larger buffer for smoother playback
+            # More channels to allow more simultaneous sounds
+            pygame.mixer.pre_init(frequency=48000, size=-16, channels=2, buffer=2048)
+            pygame.mixer.init()
+
+            # Set aside specific channels for different sound types
+            pygame.mixer.set_reserved(8)  # Reserve 8 channels for specific sounds
+
+            # Allocate channels for different sound types
+            # Channel 0: Background music (reserved)
+            # Channel 1: Player shooting (reserved)
+            # Channel 2-3: Explosions (reserved)
+            # Channel 4: Power-ups (reserved)
+            # Channel 5: Bomb (reserved)
+            # Channel 6: Missile (reserved)
+            # Channel 7: Game over (reserved)
+            # Channels 8+: Dynamic allocation
+
+            sound_channels = {
+                'background_music': pygame.mixer.Channel(0),
+                'shoot': pygame.mixer.Channel(1),
+                'explosion': pygame.mixer.Channel(2),
+                'explosion2': pygame.mixer.Channel(3),
+                'powerup': pygame.mixer.Channel(4),
+                'bomb': pygame.mixer.Channel(5),
+                'missile': pygame.mixer.Channel(6),
+                'game_over': pygame.mixer.Channel(7)
+            }
+
+            # Set volume for each channel
+            sound_channels['background_music'].set_volume(music_volume)
+            sound_channels['shoot'].set_volume(effects_volume * 0.4)  # Lower for frequent sounds
+            sound_channels['explosion'].set_volume(effects_volume * 0.7)
+            sound_channels['explosion2'].set_volume(effects_volume * 0.7)
+            sound_channels['powerup'].set_volume(effects_volume * 0.6)
+            sound_channels['bomb'].set_volume(effects_volume * 0.9)
+            sound_channels['missile'].set_volume(effects_volume * 0.5)
+            sound_channels['game_over'].set_volume(effects_volume * 0.8)
+
+            logger.info("Sound system initialized with optimized settings")
 
             # Load sound files
             sound_files = {
@@ -329,17 +378,54 @@ def setup_sound_system(args):
                 'powerup': 0.6,    # Medium volume
                 'bomb': 0.9,       # Dramatic effect
                 'missile': 0.5,    # Medium volume
-                'background_music': 0.3  # Background music (quieter)
+                'background_music': music_volume  # Background music (quieter)
+            }
+
+            # Create sound pools for frequently used sounds
+            # This allows multiple instances of the same sound to play simultaneously
+            pool_sizes = {
+                'shoot': 8,       # Many bullets can be fired rapidly
+                'explosion': 6,    # Multiple explosions can happen at once
+                'powerup': 3,      # Few powerups collected at once
+                'missile': 4       # Few missiles fired at once
             }
 
             for name, filename in sound_files.items():
                 sound_path = os.path.join('assets', 'sounds', filename)
                 if os.path.exists(sound_path):
                     try:
-                        sounds[name] = pygame.mixer.Sound(sound_path)
+                        # Load the sound
+                        sound = pygame.mixer.Sound(sound_path)
+
                         # Set appropriate volume
-                        sounds[name].set_volume(volume_levels.get(name, 0.7))
-                        logger.debug("Loaded sound: %s at volume %.1f", sound_path, volume_levels.get(name, 0.7))
+                        sound.set_volume(volume_levels.get(name, 0.7))
+                        sounds[name] = sound
+
+                        # Create sound pools for frequently used sounds
+                        if name in pool_sizes:
+                            # Create multiple instances of the same sound for the pool
+                            # Note: We're loading the same file multiple times instead of using copy()
+                            # since some pygame versions don't support copy()
+                            pool = []
+                            for _ in range(pool_sizes[name]):
+                                try:
+                                    sound_copy = pygame.mixer.Sound(sound_path)
+                                    sound_copy.set_volume(volume_levels.get(name, 0.7))
+                                    pool.append(sound_copy)
+                                except Exception as e:
+                                    logger.warning(f"Failed to create sound copy: {e}")
+                                    # Use the original sound as fallback
+                                    pool.append(sound)
+
+                            sound_pools[name] = {
+                                'sounds': pool,
+                                'index': 0  # Current index in the pool
+                            }
+                            logger.debug("Created sound pool for %s with %d instances",
+                                      name, pool_sizes[name])
+
+                        logger.debug("Loaded sound: %s at volume %.1f",
+                                   sound_path, volume_levels.get(name, 0.7))
                     except pygame.error as e:
                         logger.warning("Failed to load sound: %s - %s", sound_path, str(e))
                         sounds[name] = DummySound()
@@ -357,7 +443,131 @@ def setup_sound_system(args):
         for sound_name in ['shoot', 'explosion', 'game_over', 'powerup', 'bomb', 'missile', 'background_music']:
             sounds[sound_name] = DummySound()
 
+        # Create dummy channels
+        for channel_name in ['background_music', 'shoot', 'explosion', 'explosion2', 'powerup', 'bomb', 'missile', 'game_over']:
+            sound_channels[channel_name] = DummyChannel()
+
     return sounds, sound_enabled
+
+
+def play_sound(name, channel=None, volume=None, loops=0, maxtime=0, fade_ms=0):
+    """Play a sound with enhanced control
+
+    Args:
+        name: Name of the sound to play
+        channel: Specific channel to play on (None for auto)
+        volume: Override volume (None for default)
+        loops: Number of times to loop (-1 for infinite)
+        maxtime: Maximum play time in milliseconds
+        fade_ms: Fade-in time in milliseconds
+    """
+    global sounds, sound_channels, sound_pools, master_volume
+
+    if name not in sounds:
+        logger.warning("Attempted to play unknown sound: %s", name)
+        return
+
+    # Apply master volume
+    actual_volume = volume if volume is not None else sounds[name].get_volume()
+    actual_volume *= master_volume
+
+    # Use sound pool if available
+    if name in sound_pools:
+        # Get the next sound from the pool
+        pool = sound_pools[name]
+        sound = pool['sounds'][pool['index']]
+
+        # Update the index for next time
+        pool['index'] = (pool['index'] + 1) % len(pool['sounds'])
+
+        # Set volume if specified
+        if volume is not None:
+            sound.set_volume(actual_volume)
+
+        # Play on specified channel or auto-select
+        if channel is not None:
+            if isinstance(channel, str) and channel in sound_channels:
+                sound_channels[channel].play(sound, loops, maxtime, fade_ms)
+            elif isinstance(channel, int):
+                pygame.mixer.Channel(channel).play(sound, loops, maxtime, fade_ms)
+        else:
+            # Auto-select channel based on sound type
+            if name in sound_channels:
+                sound_channels[name].play(sound, loops, maxtime, fade_ms)
+            else:
+                sound.play(loops, maxtime, fade_ms)
+    else:
+        # Regular sound (not pooled)
+        sound = sounds[name]
+
+        # Set volume if specified
+        if volume is not None:
+            sound.set_volume(actual_volume)
+
+        # Play on specified channel or auto-select
+        if channel is not None:
+            if isinstance(channel, str) and channel in sound_channels:
+                sound_channels[channel].play(sound, loops, maxtime, fade_ms)
+            elif isinstance(channel, int):
+                pygame.mixer.Channel(channel).play(sound, loops, maxtime, fade_ms)
+        else:
+            # Auto-select channel based on sound type
+            if name in sound_channels:
+                sound_channels[name].play(sound, loops, maxtime, fade_ms)
+            else:
+                sound.play(loops, maxtime, fade_ms)
+
+
+def set_master_volume(volume):
+    """Set the master volume for all sounds
+
+    Args:
+        volume: Volume level (0.0 to 1.0)
+    """
+    global master_volume, sound_channels
+
+    # Clamp volume to valid range
+    master_volume = max(0.0, min(1.0, volume))
+
+    # Update channel volumes
+    for name, channel in sound_channels.items():
+        if name == 'background_music':
+            channel.set_volume(music_volume * master_volume)
+        else:
+            channel.set_volume(effects_volume * master_volume)
+
+
+def set_music_volume(volume):
+    """Set the music volume
+
+    Args:
+        volume: Volume level (0.0 to 1.0)
+    """
+    global music_volume, sound_channels, master_volume
+
+    # Clamp volume to valid range
+    music_volume = max(0.0, min(1.0, volume))
+
+    # Update music channel volume
+    if 'background_music' in sound_channels:
+        sound_channels['background_music'].set_volume(music_volume * master_volume)
+
+
+def set_effects_volume(volume):
+    """Set the sound effects volume
+
+    Args:
+        volume: Volume level (0.0 to 1.0)
+    """
+    global effects_volume, sound_channels, master_volume
+
+    # Clamp volume to valid range
+    effects_volume = max(0.0, min(1.0, volume))
+
+    # Update effect channel volumes
+    for name, channel in sound_channels.items():
+        if name != 'background_music':
+            channel.set_volume(effects_volume * master_volume)
 
 class DummySound:
     """Dummy sound class for when sound is disabled"""

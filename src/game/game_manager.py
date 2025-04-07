@@ -14,7 +14,7 @@ from src.utils.constants import (
     MISSILE_LEVEL_1, MISSILE_LEVEL_2, MISSILE_LEVEL_3, MISSILE_LEVEL_4,
     LEVEL_THRESHOLDS
 )
-from src.utils.resources import load_image, setup_sound_system, sounds
+from src.utils.resources import load_image, setup_sound_system, play_sound
 from src.entities.player import Player
 from src.entities.bee import Bee
 from src.entities.boss import Boss
@@ -52,15 +52,9 @@ class GameManager:
         # Start background music if sound is enabled
         if self.sound_enabled:
             try:
-                # Check if background music is available
-                if 'background_music' in self.sounds:
-                    # Play background music on a loop (-1 means loop indefinitely)
-                    self.sounds['background_music'].play(loops=-1)
-                    # Set background music volume lower than sound effects
-                    self.sounds['background_music'].set_volume(0.3)
-                    logger.info("Background music started")
-                else:
-                    logger.warning("Background music not found in sounds dictionary")
+                # Play background music on a loop (-1 means loop indefinitely)
+                play_sound('background_music', channel='background_music', loops=-1, fade_ms=2000)
+                logger.info("Background music started")
             except Exception as e:
                 logger.error(f"Failed to play background music: {e}")
                 # Continue game without background music
@@ -421,7 +415,7 @@ class GameManager:
                             self.explosions.add(explosion)
 
                             # Play explosion sound
-                            sounds['explosion'].play()
+                            play_sound('explosion', channel='explosion')
 
                             # Random chance to spawn a power-up based on bee's drop chance
                             if random.random() < bee.drop_chance:
@@ -476,7 +470,7 @@ class GameManager:
                             self.explosions.add(explosion)
 
                             # Play explosion sound
-                            sounds['explosion'].play()
+                            play_sound('explosion', channel='explosion')
 
                             # Higher chance to spawn a power-up with missiles (1.5x normal drop rate)
                             if random.random() < (bee.drop_chance * 1.5):
@@ -539,7 +533,7 @@ class GameManager:
                 if hits and not self.game_over:
                     self.game_over = True
                     # Play game over sound
-                    sounds['game_over'].play()
+                    play_sound('game_over', channel='game_over', fade_ms=500)
 
                 # Check if we need to spawn more bees
                 if not self.boss_active and not self.game_over and not self.victory:
@@ -599,7 +593,7 @@ class GameManager:
                                 self.explosions.add(explosion)
 
                             # Play explosion sound
-                            sounds['explosion'].play()
+                            play_sound('explosion', channel='explosion2')
 
                             # Level completion logic
                             if self.current_level < self.max_level:
@@ -635,7 +629,7 @@ class GameManager:
                                 self.all_sprites.add(explosion)
                                 self.explosions.add(explosion)
 
-                            sounds['explosion'].play()
+                            play_sound('explosion', channel='explosion')
 
                             if self.current_level < self.max_level:
                                 self.current_level += 1

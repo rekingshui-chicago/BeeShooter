@@ -4,10 +4,13 @@ Missile entity
 import pygame
 import math
 import random
+import logging
 from src.utils.constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, GREY, RED, ORANGE
 )
 from src.utils.resources import load_image
+
+logger = logging.getLogger('bee_shooter.missile')
 
 class Missile(pygame.sprite.Sprite):
     """Missile class for player's special weapon"""
@@ -50,56 +53,76 @@ class Missile(pygame.sprite.Sprite):
         self.smoke_timer += 1
 
         # Target seeking behavior
-        if self.target_seeking and self.target:
+        if self.target_seeking:
+            # Check if we have a target
+            if self.target is None:
+                # No target, just go straight up
+                logger.debug("Missile has no target, going straight up")
+                self.speedx = 0
+                self.speedy = -8
+                return
+
             # Check if target is still alive
-            if hasattr(self.target, 'alive') and callable(getattr(self.target, 'alive')) and not self.target.alive():
-                # Target is no longer alive, clear it
-                self.target = None
-            else:
-                # Calculate direction to target
-                target_direction = pygame.math.Vector2(
-                    self.target.rect.centerx - self.rect.centerx,
-                    self.target.rect.centery - self.rect.centery
+            if hasattr(self.target, 'alive') and callable(getattr(self.target, 'alive')):
+                if not self.target.alive():
+                    # Target is no longer alive, clear it
+                    logger.debug("Missile target is no longer alive, clearing target")
+                    self.target = None
+                    self.speedx = 0
+                    self.speedy = -8
+                    return
+
+            # Calculate direction to target
+            target_direction = pygame.math.Vector2(
+                self.target.rect.centerx - self.rect.centerx,
+                self.target.rect.centery - self.rect.centery
+            )
+
+            # Log target direction for debugging
+            logger.debug(f"Target direction: {target_direction}, length: {target_direction.length()}")
+
+            # Skip if target is too close (avoid division by zero)
+            if target_direction.length() > 5:
+                target_direction = target_direction.normalize()
+
+                # Calculate angle between current direction and target direction
+                angle_diff = math.degrees(math.atan2(
+                    self.direction.x * target_direction.y - self.direction.y * target_direction.x,
+                    self.direction.x * target_direction.x + self.direction.y * target_direction.y
+                ))
+
+                logger.debug(f"Angle difference: {angle_diff}")
+
+                # Increase turning rate for better tracking
+                self.max_turn_rate = 2.0  # Increased from 0.8 for much better tracking
+
+                # Limit turning rate
+                if abs(angle_diff) > self.max_turn_rate:
+                    angle_diff = self.max_turn_rate if angle_diff > 0 else -self.max_turn_rate
+
+                # Update direction
+                self.angle += angle_diff
+                self.direction = pygame.math.Vector2(
+                    math.sin(math.radians(self.angle)),
+                    -math.cos(math.radians(self.angle))
                 )
 
-                # Skip if target is too close (avoid division by zero)
-                if target_direction.length() > 5:
-                    target_direction = target_direction.normalize()
+                # Update speed based on direction
+                speed_factor = 8  # Base speed
+                # Increase speed if target is far away
+                if target_direction.length() > 200:
+                    speed_factor = 12  # Faster to catch up (increased from 10)
 
-                    # Calculate angle between current direction and target direction
-                    angle_diff = math.degrees(math.atan2(
-                        self.direction.x * target_direction.y - self.direction.y * target_direction.x,
-                        self.direction.x * target_direction.x + self.direction.y * target_direction.y
-                    ))
+                self.speedx = self.direction.x * speed_factor
+                self.speedy = self.direction.y * speed_factor
 
-                    # Increase turning rate for better tracking
-                    self.max_turn_rate = 0.8  # Increased from 0.3
+                logger.debug(f"Missile speed: ({self.speedx}, {self.speedy})")
 
-                    # Limit turning rate
-                    if abs(angle_diff) > self.max_turn_rate:
-                        angle_diff = self.max_turn_rate if angle_diff > 0 else -self.max_turn_rate
-
-                    # Update direction
-                    self.angle += angle_diff
-                    self.direction = pygame.math.Vector2(
-                        math.sin(math.radians(self.angle)),
-                        -math.cos(math.radians(self.angle))
-                    )
-
-                    # Update speed based on direction
-                    speed_factor = 8  # Base speed
-                    # Increase speed if target is far away
-                    if target_direction.length() > 200:
-                        speed_factor = 10  # Faster to catch up
-
-                    self.speedx = self.direction.x * speed_factor
-                    self.speedy = self.direction.y * speed_factor
-
-                    # Rotate image to match direction
-                    self.image = pygame.transform.rotate(self.original_image, self.angle)
-                    self.rect = self.image.get_rect(center=self.rect.center)
-        elif self.target_seeking and not self.target:
-            # If missile is seeking but has no target, just go straight up
+                # Rotate image to match direction
+                self.image = pygame.transform.rotate(self.original_image, self.angle)
+                self.rect = self.image.get_rect(center=self.rect.center)
+        else:
+            # Not target seeking, just go straight up
             self.speedx = 0
             self.speedy = -8
 
@@ -120,4 +143,10 @@ class Missile(pygame.sprite.Sprite):
 
     def set_target(self, target):
         """Set the target for the missile"""
+        if target is None:
+            logger.debug("Missile target set to None")
+            return
+
         self.target = target
+        self.target_seeking = True  # Ensure target seeking is enabled
+        logger.debug(f"Missile target set to {target.__class__.__name__} at position {target.rect.center}")

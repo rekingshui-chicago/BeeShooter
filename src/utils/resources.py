@@ -367,7 +367,7 @@ def setup_sound_system(args):
                 'powerup': 'powerup.wav',
                 'bomb': 'bomb.wav',
                 'missile': 'missile.wav',
-                'background_music': 'background_music.wav'
+                'background_music': 'background_music.wav'  # Changed back to .wav format
             }
 
             # Set volume levels for different sound types

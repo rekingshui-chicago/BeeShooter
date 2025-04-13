@@ -53,9 +53,12 @@ class GameManager:
         if self.sound_enabled:
             try:
                 # Play background music on a loop (-1 means loop indefinitely)
+                print("Attempting to play background music...")
                 play_sound('background_music', channel='background_music', loops=-1, fade_ms=2000)
+                print("Background music started successfully")
                 logger.info("Background music started")
             except Exception as e:
+                print(f"Failed to play background music: {e}")
                 logger.error(f"Failed to play background music: {e}")
                 # Continue game without background music
 
@@ -73,6 +76,10 @@ class GameManager:
         # B key debounce variables
         self.last_b_key_time = 0
         self.b_key_debounce_time = 500  # milliseconds
+
+        # Auto-missile launch variables
+        self.last_auto_missile_time = 0
+        self.auto_missile_delay = 3000  # Launch a missile every 3 seconds
 
         # Background scrolling variables
         self.bg_scroll_x = 0
@@ -265,14 +272,37 @@ class GameManager:
                                 self.missiles_group.add(missile)
 
                                 # Find closest bee for targeting
-                                if self.bees:
-                                    closest_bee = min(self.bees.sprites(),
-                                                    key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
-                                                                    (bee.rect.centery - missile.rect.centery)**2))
-                                    missile.set_target(closest_bee)
+                                if self.bees and len(self.bees) > 0:
+                                    try:
+                                        # Get all bees that are on screen or just above it
+                                        valid_targets = [bee for bee in self.bees.sprites()
+                                                        if bee.rect.bottom > -50 and bee.rect.top < SCREEN_HEIGHT]
+
+                                        if valid_targets:
+                                            closest_bee = min(valid_targets,
+                                                            key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
+                                                                            (bee.rect.centery - missile.rect.centery)**2))
+                                            missile.set_target(closest_bee)
+                                            print(f"Missile launched and targeting {closest_bee.__class__.__name__} at {closest_bee.rect.center}")
+                                        else:
+                                            # No valid targets, try to find any bee
+                                            closest_bee = min(self.bees.sprites(),
+                                                            key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
+                                                                            (bee.rect.centery - missile.rect.centery)**2))
+                                            missile.set_target(closest_bee)
+                                            print(f"Missile launched and targeting off-screen bee at {closest_bee.rect.center}")
+                                    except (ValueError, AttributeError) as e:
+                                        print(f"Error finding target for missile: {e}")
+                                        # If there's an error, try to target the boss instead
+                                        if self.boss_active and self.boss and self.boss.alive():
+                                            missile.set_target(self.boss)
+                                            print(f"Missile targeting boss instead at {self.boss.rect.center}")
                                 # If no bees but boss is active, target the boss
                                 elif self.boss_active and self.boss and self.boss.alive():
                                     missile.set_target(self.boss)
+                                    print(f"Missile launched and targeting boss at {self.boss.rect.center}")
+                                else:
+                                    print("Missile launched but no targets available")
 
                     # Enter to restart after game over
                     elif event.key == pygame.K_RETURN and (self.game_over or self.victory):
@@ -353,23 +383,76 @@ class GameManager:
                     if self.debug_info:
                         print(f"Error detecting B key: {e}")
 
+                # Auto-launch missiles if available
+                now = pygame.time.get_ticks()
+                if now - self.last_auto_missile_time > self.auto_missile_delay:
+                    # Try to launch a missile
+                    missiles = self.player.launch_missile(auto_launch=True)
+                    if missiles:
+                        self.last_auto_missile_time = now
+                        for missile in missiles:
+                            self.all_sprites.add(missile)
+                            self.missiles_group.add(missile)
+
+                            # Find closest bee for targeting
+                            if self.bees and len(self.bees) > 0:
+                                try:
+                                    # Get all bees that are on screen or just above it
+                                    valid_targets = [bee for bee in self.bees.sprites()
+                                                    if bee.rect.bottom > -50 and bee.rect.top < SCREEN_HEIGHT]
+
+                                    if valid_targets:
+                                        closest_bee = min(valid_targets,
+                                                        key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
+                                                                        (bee.rect.centery - missile.rect.centery)**2))
+                                        missile.set_target(closest_bee)
+                                        print(f"Auto-missile targeting {closest_bee.__class__.__name__} at {closest_bee.rect.center}")
+                                    else:
+                                        # No valid targets, try to find any bee
+                                        closest_bee = min(self.bees.sprites(),
+                                                        key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
+                                                                        (bee.rect.centery - missile.rect.centery)**2))
+                                        missile.set_target(closest_bee)
+                                        print(f"Auto-missile targeting off-screen bee at {closest_bee.rect.center}")
+                                except (ValueError, AttributeError) as e:
+                                    print(f"Error finding target for auto-missile: {e}")
+                                    # If there's an error, try to target the boss instead
+                                    if self.boss_active and self.boss and self.boss.alive():
+                                        missile.set_target(self.boss)
+                                        print(f"Auto-missile targeting boss instead at {self.boss.rect.center}")
+                            # If no bees but boss is active, target the boss
+                            elif self.boss_active and self.boss and self.boss.alive():
+                                missile.set_target(self.boss)
+                                print(f"Auto-missile targeting boss at {self.boss.rect.center}")
+                            else:
+                                print("Auto-missile launched but no targets available")
+
                 # Update all sprites
                 self.all_sprites.update()
 
                 # Update missile targets if needed
                 for missile in self.missiles_group:
                     # If missile has no target or target is no longer alive
-                    if missile.target_seeking and (missile.target is None or not missile.target.alive()):
+                    if missile.target_seeking and (missile.target is None or not hasattr(missile.target, 'alive') or not missile.target.alive()):
                         # Find a new target
-                        if self.bees:
+                        if self.bees and len(self.bees) > 0:
                             # Find closest bee
-                            closest_bee = min(self.bees.sprites(),
-                                            key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
-                                                            (bee.rect.centery - missile.rect.centery)**2))
-                            missile.set_target(closest_bee)
+                            try:
+                                closest_bee = min(self.bees.sprites(),
+                                                key=lambda bee: ((bee.rect.centerx - missile.rect.centerx)**2 +
+                                                                (bee.rect.centery - missile.rect.centery)**2))
+                                missile.set_target(closest_bee)
+                                print(f"Missile assigned target: {closest_bee.__class__.__name__} at {closest_bee.rect.center}")
+                            except (ValueError, AttributeError) as e:
+                                print(f"Error finding closest bee: {e}")
+                                # If there's an error, try to target the boss instead
+                                if self.boss_active and self.boss and self.boss.alive():
+                                    missile.set_target(self.boss)
+                                    print(f"Missile assigned boss target at {self.boss.rect.center}")
                         elif self.boss_active and self.boss and self.boss.alive():
                             # Target boss if no bees
                             missile.set_target(self.boss)
+                            print(f"Missile assigned boss target at {self.boss.rect.center}")
 
                 # Update background scroll position based on player movement
                 # Use different speeds for different layers to create parallax effect

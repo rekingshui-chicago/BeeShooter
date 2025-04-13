@@ -13,6 +13,9 @@ A retro-style arcade shooter game where you control an F14 fighter jet to shoot 
   - [Upgrades](#upgrades)
   - [Enemies](#enemies)
 - [Troubleshooting](#troubleshooting)
+- [Recent Updates](#recent-updates)
+  - [Audio Enhancements](#audio-enhancements)
+  - [Gameplay Improvements](#gameplay-improvements)
 - [Development](#development)
 - [Credits](#credits)
 
@@ -24,7 +27,7 @@ A retro-style arcade shooter game where you control an F14 fighter jet to shoot 
 - Enemy progression with different bee types
 - Boss battles at specific score thresholds
 - Dynamic background with parallax scrolling
-- Realistic sound effects and background music
+- Enhanced sound effects and professional background music
 - F14 fighter jet with detailed graphics
 
 ## Controls
@@ -67,7 +70,7 @@ A retro-style arcade shooter game where you control an F14 fighter jet to shoot 
 ### Weapons
 
 - **Bullets**: Basic weapon, unlimited ammo
-- **Missiles**: Homing projectiles that track enemies, limited supply
+- **Missiles**: Auto-launching homing projectiles with advanced tracking, limited supply
 - **Bombs**: Clear all enemies on screen, very limited supply
 
 ### Upgrades
@@ -92,7 +95,7 @@ If you encounter any issues:
 3. Look at the `game_debug.log` file for error details
 4. If the game crashes on startup, try running it from the command line:
    ```
-   python main_new.py
+   python main.py
    ```
 
 ### Command-Line Options
@@ -108,11 +111,27 @@ Example:
 BeeShooter.bat --no-sound
 ```
 
+## Recent Updates
+
+### Audio Enhancements
+- Improved explosion sound with more layers and dynamic envelope
+- Created realistic laser/shooting sound with frequency modulation
+- Enhanced missile sound with thrust and whoosh effects
+- Added powerful bomb sound with deep bass and shockwave
+- Created dramatic game over sound with descending tones
+- Added professional background music tracks
+
+### Gameplay Improvements
+- Fixed and enhanced missile auto-tracking system
+- Implemented automatic missile launching
+- Improved target selection for missiles
+- Enhanced missile movement with better turning rate
+
 ## Development
 
 This game is built with Python and Pygame. The main components are:
 
-- `main_new.py`: Entry point for the game
+- `main.py`: Entry point for the game
 - `src/game/game_manager.py`: Main game loop and state management
 - `src/entities/`: Game entities (player, enemies, projectiles)
 - `src/utils/`: Utility functions and resource management
@@ -122,6 +141,7 @@ This game is built with Python and Pygame. The main components are:
 - Game Design & Programming: Reking Shui
 - Graphics: Procedurally generated with Pygame
 - Sound Effects: Generated with Python wave module
+- Background Music: "Battle in the Stars" and "Space Heroes" by Oblidivm (CC-BY 3.0)
 
 ---
 
